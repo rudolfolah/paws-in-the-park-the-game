@@ -1,0 +1,16 @@
+{
+  "name": "my-pet-pal",
+  "version": "1.0.0",
+  "main": "app/index.js",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "http-server": "^13.0.1"
+  },
+  "scripts": {
+    "start": "http-server ./dist --cors -c-1 -p 8081"
+  },
+  "workspaces": [
+    "src"
+  ]
+}
