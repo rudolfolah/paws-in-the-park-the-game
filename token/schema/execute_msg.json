@@ -97,6 +97,106 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "mint_dog"
+      ],
+      "properties": {
+        "mint_dog": {
+          "type": "object",
+          "required": [
+            "amount"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "mint_accessory"
+      ],
+      "properties": {
+        "mint_accessory": {
+          "type": "object",
+          "required": [
+            "amount",
+            "name"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "sell_dog_on_market"
+      ],
+      "properties": {
+        "sell_dog_on_market": {
+          "type": "object",
+          "required": [
+            "dog_id",
+            "price"
+          ],
+          "properties": {
+            "dog_id": {
+              "type": "string"
+            },
+            "price": {
+              "$ref": "#/definitions/Uint128"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "buy_dog_on_market"
+      ],
+      "properties": {
+        "buy_dog_on_market": {
+          "type": "object",
+          "required": [
+            "dog_id"
+          ],
+          "properties": {
+            "dog_id": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "spin_the_wheel"
+      ],
+      "properties": {
+        "spin_the_wheel": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {

@@ -35,6 +35,50 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "game_info"
+      ],
+      "properties": {
+        "game_info": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "inventory"
+      ],
+      "properties": {
+        "inventory": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "market_listings"
+      ],
+      "properties": {
+        "market_listings": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   ]
 }
