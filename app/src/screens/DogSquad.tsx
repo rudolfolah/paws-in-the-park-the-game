@@ -1,44 +1,12 @@
 import React, {useEffect, useMemo, useState} from "react";
 import {hideGame} from "../game";
 import {Accessory, Dog, InventoryResponse} from "../types";
-import {DogInfo} from "../components/DogInfo";
 import {CONTRACT_ADDRESS} from "../components/constants";
 import {useConnectedWallet} from "@terra-money/wallet-provider";
-import {LCDClient} from "@terra-money/terra.js";
+import {CreateTxOptions, LCDClient, MsgExecuteContract, StdFee} from "@terra-money/terra.js";
 import './DogSquad.css';
-
-const ACCESSORY_IMAGE: {[index: string]: string} = {
-  "martini glass": "assets/accessory-martini.png",
-  "sparkle": "assets/accessory-sparkle.png",
-  "star": "assets/accessory-rainbow-star.png",
-};
-
-const DOG_IMAGE: {[index: number]: string} = {
-  0: "assets/dog01.png",
-  1: "assets/dog02.png",
-  2: "assets/dog06.png",
-  3: "assets/dog04.png",
-  4: "assets/dog05.png",
-  5: "assets/dog07.png",
-  6: "assets/dog03.png",
-};
-
-const DOG_CLASS_NAME: {[index: number]: string} = {
-  0: "Huggable",
-  1: "Curlytail",
-  2: "Pointer",
-  3: "Margaritaville",
-  4: "Spacedog",
-  5: "Friendo",
-  6: "Woofington",
-};
-
-const DOG_ATTR_NAME: {[index: number]: string} = {
-  0: "Floofiness",
-  1: "Curiosity",
-  2: "Agility",
-  3: "Squirrel Factor",
-};
+import {ACCESSORY_IMAGE, DOG_ATTR_NAME, DOG_CLASS_NAME, DOG_IMAGE} from "../constants";
+import {Link} from "react-router-dom";
 
 export default function DogSquad() {
   useEffect(() => { hideGame() }, []);
@@ -69,6 +37,32 @@ export default function DogSquad() {
     }
   }, [connectedWallet, lcd]);
 
+  const executeSellDogOnMarket = (dog_id: string, price_in_uusd: string) => {
+    if (!connectedWallet || !lcd) {
+      return;
+    }
+    const executeMsg = new MsgExecuteContract(
+      connectedWallet.walletAddress,
+      CONTRACT_ADDRESS,
+      {
+        sell_dog_on_market: {
+          dog_id: dog_id,
+          price: price_in_uusd,
+        },
+      },
+      { uusd: 1 },
+    );
+    const tx: CreateTxOptions = {
+      msgs: [executeMsg],
+      fee: new StdFee(1000000, { uusd: 200000 }),
+    };
+    connectedWallet.post(tx).then(nextTxResult => {
+      console.log("Dog listed for sale");
+    }).catch((error: unknown) => {
+      console.error(error);
+    });
+  }
+
   const [dogs, setDogs] = useState<Dog[]>();
   const [accessories, setAccessories] = useState<Accessory[]>();
   return (<div className="screen-dog-squad">
@@ -80,8 +74,10 @@ export default function DogSquad() {
         {dogs?.map(dog =>
           <div className="dog-item" key={dog.id}>
             <header>
-              <h4>{dog.name}</h4>
-              <h5>{DOG_CLASS_NAME[dog.class]}</h5>
+              <Link to={`/dog/${dog.id}`}>
+                <h4>{dog.name}</h4>
+                <h5>{DOG_CLASS_NAME[dog.class]}</h5>
+              </Link>
             </header>
             <section>
               <div>
@@ -95,8 +91,12 @@ export default function DogSquad() {
               </div>
             </section>
             <footer>
-              <button>Sell for 1 USDT</button>
-              <button>Sell for 5 USDT</button>
+              <button onClick={() => executeSellDogOnMarket(dog.id, "1000000")}>
+                Sell for 1 USDT
+              </button>
+              <button onClick={() => executeSellDogOnMarket(dog.id, "5000000")}>
+                Sell for 5 USDT
+              </button>
             </footer>
           </div>
         )}

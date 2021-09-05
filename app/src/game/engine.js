@@ -15,6 +15,12 @@ k.loadSprite("dog02", "/assets/dog02.png");
 k.loadSprite("dog03", "/assets/dog03.png");
 k.loadSprite("dog04", "/assets/dog04.png");
 k.loadSprite("dog05", "/assets/dog05.png");
+k.loadSprite("dog06", "/assets/dog06.png");
+k.loadSprite("dog07", "/assets/dog07.png");
+k.loadSprite("accessory-martini", "/assets/accessory-martini.png");
+k.loadSprite("accessory-sparkle", "/assets/accessory-sparkle.png");
+k.loadSprite("accessory-rainbow-star", "/assets/accessory-rainbow-star.png");
+
 
 k.loadSound("spin", "/assets/spin.mp3");
 k.loadSound("winner", "/assets/winner.mp3");
