@@ -1,0 +1,48 @@
+.screen-dog-squad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h3 {
+    text-align: center;
+    padding: 32px;
+}
+
+.accessory-list {
+}
+
+.accessory-items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-row-gap: 64px;
+    grid-column-gap: 16px;
+}
+
+.accessory-item {
+}
+
+.accessory-item img {
+    width: 96px;
+}
+
+.dog-list {
+
+}
+
+.dog-items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-row-gap: 32px;
+    grid-column-gap: 0px;
+}
+
+.dog-item {
+}
+
+.dog-item img {
+    width: 128px;
+}
+
+.dog-item-attributes {
+}
