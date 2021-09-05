@@ -1,12 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { LCDClient } from "@terra-money/terra.js";
-import { useConnectedWallet } from "@terra-money/wallet-provider";
+import React, {useEffect, useMemo, useState} from "react";
+import {LCDClient} from "@terra-money/terra.js";
+import {useConnectedWallet} from "@terra-money/wallet-provider";
 
-import { CONTRACT_ADDRESS, TOKEN_SYMBOL } from "./constants";
-
-interface BalanceResponse {
-  balance: string;
-}
+import {CONTRACT_ADDRESS, TOKEN_SYMBOL} from "./constants";
+import {BalanceResponse} from "../types";
 
 export function TokenBalance() {
   const connectedWallet = useConnectedWallet();

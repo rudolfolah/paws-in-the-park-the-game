@@ -12,6 +12,7 @@ const SLOT_REEL_ITEM_HORIZONTAL_GUTTER = 300;
 const SLOT_REEL_ITEM_VERTICAL_GUTTER = 24;
 const SLOT_REEL_ITEM_OFFSET = 330 * SLOT_REEL_SCALE;
 const SLOT_REEL_ITEM_SPEEDS = [350, 400, 500];
+// time in milliseconds
 const SLOT_REEL_ITEM_SPIN_DELAYS = [0, 50, 100, 200, 300, 400];
 
 const SLOT_BAR_HEIGHT = 128;
@@ -19,6 +20,7 @@ const SLOT_BAR_HEADER_TOP = 0;
 const SLOT_BAR_FOOTER_TOP = HEIGHT - SLOT_BAR_HEIGHT;
 
 const randomSpeed = () => (SLOT_REEL_ITEM_SPEEDS[Math.floor(Math.random() * SLOT_REEL_ITEM_SPEEDS.length)]);
+// time in seconds
 const randomDelay = () => (
   SLOT_REEL_ITEM_SPIN_DELAYS[Math.floor((Math.random() * SLOT_REEL_ITEM_SPIN_DELAYS.length))] / 1000.0
 );
@@ -66,20 +68,41 @@ const makeWinnerFrames = () => {
   ]);
 }
 
-const spin = () => {
-  k.wait(randomDelay(), () => {
-    k.action("column-1", moveReelItem());
+const spin = (finishedSpinCallback) => {
+  let reelCancels = [];
+  let reelDelays = [
+    randomDelay(),
+    randomDelay(),
+    randomDelay(),
+  ];
+  k.wait(reelDelays[0], () => {
+    reelCancels.push(k.action("column-1", moveReelItem()));
   });
-  k.wait(randomDelay(), () => {
-    k.action("column-2", moveReelItem());
+  k.wait(reelDelays[1], () => {
+    reelCancels.push(k.action("column-2", moveReelItem()));
   });
-  k.wait(randomDelay(), () => {
-    k.action("column-2", moveReelItem());
+  k.wait(reelDelays[2], () => {
+    reelCancels.push(k.action("column-3", moveReelItem()));
   });
-  const music = k.play("dogdetail", {
+  const musicSpin = k.play("spin", {
     loop: true,
   });
-  k.wait(5)
+  k.wait(3, () => {
+    document._pawsinthepark_execute_spin(function() {
+      musicSpin.volume(1.5);
+      k.wait(1, () => {
+        for (let i = 0; i < reelDelays.length; i += 1) {
+          reelCancels[i]();
+        }
+        musicSpin.stop();
+        const musicWinner = k.play("winner", { loop: true });
+        k.wait(10, () => {
+          musicWinner.stop();
+          finishedSpinCallback();
+        });
+      });
+    });
+  });
 }
 
 const slots = () => {
@@ -100,7 +123,9 @@ const slots = () => {
   k.action(() => {
     if (!spinInProgress && k.mouseIsClicked()) {
       spinInProgress = true;
-      spin();
+      spin(() => {
+        spinInProgress = false;
+      });
     }
   });
 

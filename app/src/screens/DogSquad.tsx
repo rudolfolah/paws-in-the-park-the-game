@@ -1,56 +1,62 @@
-import React, {useEffect} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {hideGame} from "../game";
+import {Accessory, Dog, InventoryResponse} from "../types";
+import {DogInfo} from "../components/DogInfo";
+import {CONTRACT_ADDRESS} from "../components/constants";
+import {useConnectedWallet} from "@terra-money/wallet-provider";
+import {LCDClient} from "@terra-money/terra.js";
 
-const dogs: any = {
-  "id-01": {
-    "name": "Dog #01",
-    "bio": "Biography",
-    "attributes": {
-      "floofiness": 10,
-      "curiousity": 1,
-      "agility": 5,
-      "squirrel_factor": 7,
-    },
-    "trophies": [
-      {
-        "trophyType": "ribbon",
-        "name": "Trophy #01",
-      },
-      {
-        "trophyType": "ribbon",
-        "name": "Trophy #02",
-      }
-    ]
-  }
-}
-
-// @ts-ignore
-function DogInfo({ dog }) {
-  return (<div>
-    <div>
-      <div>
-        <img />
-      </div>
-      <div>
-        <div>
-          {dog.name}
-        </div>
-        <div>
-          {dog.biography}
-        </div>
-      </div>
-    </div>
-    <div>
-      {Object.keys(dog.attributes).map(attributeName => (<div key={attributeName}>
-        {attributeName}: {dog.attributes[attributeName]}
-      </div>))}
-    </div>
-  </div>)
-}
+const ACCESSORY_IMAGE: {[index: string]: string} = {
+  "martini glass": "assets/accessory-martini.png",
+  "sparkle": "assets/accessory-sparkle.png",
+  "star": "assets/accessory-rainbow-star.png",
+};
 
 export default function DogSquad() {
   useEffect(() => { hideGame() }, []);
+
+  const connectedWallet = useConnectedWallet();
+  const lcd = useMemo(() => {
+    if (!connectedWallet) {
+      return null;
+    }
+    return new LCDClient({
+      URL: connectedWallet.network.lcd,
+      chainID: connectedWallet.network.chainID,
+    })
+  }, [connectedWallet]);
+  useEffect(() => {
+    if (connectedWallet && lcd) {
+      lcd.wasm.contractQuery<InventoryResponse>(CONTRACT_ADDRESS, {
+        "inventory": {
+          "address": connectedWallet.walletAddress,
+        },
+      }).then(result => {
+        setDogs(result.dogs);
+        setAccessories(result.accessories);
+      });
+    } else {
+      setDogs([]);
+      setAccessories([]);
+    }
+  }, [connectedWallet, lcd]);
+
+  const [dogs, setDogs] = useState<Dog[]>();
+  const [accessories, setAccessories] = useState<Accessory[]>();
   return (<div>
-    {Object.keys(dogs).map(dogId => <DogInfo key={dogId} dog={dogs[dogId]} />)}
+    {dogs?.length}
+    <section className="accessory-list">
+      <header>
+        <h3>Accessories</h3>
+      </header>
+      <section className="accessory-items">
+        {accessories?.map(accessory =>
+          <div className="accessory-item" key={accessory.id}>
+            <img src={ACCESSORY_IMAGE[accessory.name]} />
+            {accessory.name}
+          </div>
+        )}
+      </section>
+    </section>
   </div>);
 }
