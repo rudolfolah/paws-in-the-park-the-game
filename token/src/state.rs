@@ -1,4 +1,4 @@
-use cosmwasm_std::Uint128;
+use cosmwasm_std::{Uint128, Coin};
 use cw_storage_plus::{Item, Map}; // See: https://github.com/CosmWasm/cw-plus/tree/main/packages/storage-plus
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -29,8 +29,17 @@ pub struct AccessoryData {
     pub id: String,
 }
 
-pub const TOTAL_SUPPLY_DOGS: Item<Uint128> = Item::new("total_supply_dogs");
-pub const TOTAL_SUPPLY_ACCESSORIES: Item<Uint128> = Item::new("total_supply_accessories");
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub struct MarketListing {
+    pub listed_by_address: String,
+    pub id: String,
+    pub price: Coin,
+}
 
+// key is a combination of the owner's address and the object's generated id
 pub const DOGS: Map<(&[u8], &[u8]), DogData> = Map::new("all_dogs");
+// key is a combination of the owner's address and the object's generated id
 pub const ACCESSORIES: Map<(&[u8], &[u8]), AccessoryData> = Map::new("all_accessories");
+// key is the object's generated id
+pub const MARKET_LISTINGS_DOGS: Map<&[u8], MarketListing> = Map::new("market_listings_dogs");

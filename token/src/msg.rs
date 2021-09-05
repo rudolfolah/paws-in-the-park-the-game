@@ -1,7 +1,7 @@
 use cosmwasm_std::{Uint128, Binary};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::{DogData, AccessoryData};
+use crate::state::{DogData, AccessoryData, MarketListing};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {}
@@ -25,7 +25,10 @@ pub enum ExecuteMsg {
 
     // TODO: the following need to go into a separate smart contract
     MintDog { amount: Uint128 },
-    MintAccessory { amount: Uint128 },
+    MintAccessory { name: String, amount: Uint128 },
+    SellDogOnMarket { dog_id: String, price: Uint128 },
+    BuyDogOnMarket { dog_id: String },
+    SpinTheWheel {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -41,6 +44,7 @@ pub enum QueryMsg {
     // TODO: the following need to go into a separate smart contract
     GameInfo {},
     Inventory { address: String },
+    MarketListings {},
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -59,8 +63,8 @@ pub struct TokenInfoResponse {
 // TODO: the following need to go into a separate smart contract
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct GameInfoResponse {
-    pub total_supply_dogs: Uint128,
-    pub total_supply_accessories: Uint128,
+    pub total_supply_dogs: usize,
+    pub total_supply_accessories: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
@@ -68,4 +72,9 @@ pub struct InventoryResponse {
     pub address: String,
     pub dogs: Vec<DogData>,
     pub accessories: Vec<AccessoryData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
+pub struct MarketListingsResponse {
+    pub listings: Vec<MarketListing>,
 }

@@ -18,4 +18,29 @@ pub enum ContractError {
 
     #[error("Amount cannot be zero")]
     AmountCannotBeZero {},
+
+    // TODO: the following need to go into a separate smart contract
+    #[error("Dog with given id does not exist")]
+    DogDoesNotExist {},
+
+    #[error("Listing price is below minimum")]
+    ListingPriceTooLow {},
+
+    #[error("Listing price is above maximum")]
+    ListingPriceTooHigh {},
+
+    #[error("Object is already listed on market")]
+    AlreadyListedOnMarket {},
+
+    #[error("Listing with given id does not exist")]
+    ListingDoesNotExist {},
+
+    #[error("Does not match listing price")]
+    DoesNotMatchListingPrice {},
+
+    #[error("Insufficient funds")]
+    InsufficientFunds {},
+
+    #[error("Failed commission calculation")]
+    FailedCommissionCalculation {},
 }
