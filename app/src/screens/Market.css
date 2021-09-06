@@ -1,0 +1,33 @@
+.screen-market {
+
+}
+
+.screen-market header {
+    display: flex;
+}
+
+.market-listings {
+
+}
+
+.market-listing {
+    display: flex;
+    padding: 32px;
+}
+
+.market-listing section {
+
+}
+
+.market-listing footer {
+
+}
+
+.market-listing-title {
+    font-size: 16pt;
+    line-height: 2em;
+}
+
+.market-listing-listed-by {
+
+}

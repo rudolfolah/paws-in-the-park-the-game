@@ -2,6 +2,9 @@ import k from "../engine";
 import {GAME_TITLE, WIDTH, HEIGHT, ACCESSORY_SPRITE, DOG_SPRITE} from "../constants";
 
 const detail = () => {
+  k.play("dogdetail", {
+    loop: true,
+  });
   k.add([
     k.text(GAME_TITLE, 32),
     k.origin("center"),
@@ -29,9 +32,13 @@ const detail = () => {
         Math.floor(Math.random() * (WIDTH * 0.9) + (WIDTH * 0.1)),
         Math.floor(Math.random() * (HEIGHT * 0.7) + (HEIGHT * 0.2)),
       ),
+      "accessory",
       accessory.name,
     ]);
   }
+  k.action("accessory", (obj) => {
+    obj.move(5, 5);
+  });
 };
 
 export default detail;

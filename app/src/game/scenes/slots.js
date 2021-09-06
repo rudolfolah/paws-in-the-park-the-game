@@ -53,20 +53,79 @@ const moveReelItem = () => {
   };
 };
 
-const makeWinnerFrames = () => {
+const showWinnerFrames = () => {
   k.add([
     k.sprite("frame"),
     k.pos(SLOT_REEL_ITEM_LEFT, WIDTH * 0.4),
     k.scale(0.65),
-    k.layer("winner")
+    k.layer("winner"),
+    "winner-frame",
   ]);
   k.add([
     k.sprite("frame"),
     k.pos(SLOT_REEL_ITEM_LEFT + SLOT_REEL_ITEM_HORIZONTAL_GUTTER, WIDTH * 0.4),
     k.scale(0.65),
-    k.layer("winner")
+    k.layer("winner"),
+    "winner-frame",
   ]);
-}
+  k.add([
+    k.sprite("frame"),
+    k.pos(SLOT_REEL_ITEM_LEFT + SLOT_REEL_ITEM_HORIZONTAL_GUTTER * 2, WIDTH * 0.4),
+    k.scale(0.65),
+    k.layer("winner"),
+    "winner-frame",
+  ]);
+};
+
+const hideWinnerFrames = () => {
+  k.destroyAll("winner-frame");
+};
+
+const addWinnerPopup = () => {
+  k.add([
+    k.rect(WIDTH, HEIGHT),
+    k.pos(0, 0),
+    k.color(0.1, 0.1, 0.1, 0.7),
+    k.layer("popup"),
+    "winner-popup",
+  ]);
+  k.add([
+    k.rect(WIDTH * 0.85, HEIGHT * 0.25),
+    k.origin("center"),
+    k.pos(WIDTH / 2, HEIGHT / 2),
+    k.color(0.8, 0.7, 0.1),
+    k.layer("popup"),
+    "winner-popup",
+  ]);
+  k.add([
+    k.rect(WIDTH * 0.85, HEIGHT * 0.25),
+    k.origin("center"),
+    k.pos(WIDTH / 2 + 12, HEIGHT / 2 + 12),
+    k.color(1.0, 1.0, 1.0),
+    k.layer("popup"),
+    "winner-popup",
+  ]);
+  k.add([
+    k.text("Winner!", 48),
+    k.origin("center"),
+    k.pos(WIDTH / 2, HEIGHT / 2 - 40),
+    k.color(0.1, 0.1, 0.2),
+    k.layer("popup"),
+    "winner-popup",
+  ]);
+  k.add([
+    k.text("Click 'Dog Squad' to see your prize!", 32, { width: WIDTH * 0.8 }),
+    k.origin("center"),
+    k.pos(WIDTH / 2, HEIGHT / 2 + 40),
+    k.color(0.1, 0.1, 0.2),
+    k.layer("popup"),
+    "winner-popup",
+  ]);
+};
+
+const removeWinnerPopup = () => {
+  k.destroyAll("winner-popup");
+};
 
 const spin = (finishedSpinCallback) => {
   let reelCancels = [];
@@ -96,14 +155,18 @@ const spin = (finishedSpinCallback) => {
         }
         musicSpin.stop();
         const musicWinner = k.play("winner", { loop: true });
+        showWinnerFrames();
+        addWinnerPopup();
         k.wait(10, () => {
+          hideWinnerFrames();
+          removeWinnerPopup();
           musicWinner.stop();
           finishedSpinCallback();
         });
       });
     });
   });
-}
+};
 
 const slots = () => {
   let spinInProgress = false;
@@ -111,14 +174,12 @@ const slots = () => {
     "background",
     "obj",
     "winner",
-    "ui"
+    "ui",
+    "popup",
   ], "obj");
-  makeWinnerFrames();
-  const reelItems = [
-    makeReel("column-1", SLOT_REEL_ITEM_LEFT),
-    makeReel("column-2", SLOT_REEL_ITEM_LEFT + SLOT_REEL_ITEM_HORIZONTAL_GUTTER),
-    makeReel("column-3",SLOT_REEL_ITEM_LEFT + (SLOT_REEL_ITEM_HORIZONTAL_GUTTER * 2))
-  ];
+  makeReel("column-1", SLOT_REEL_ITEM_LEFT),
+  makeReel("column-2", SLOT_REEL_ITEM_LEFT + SLOT_REEL_ITEM_HORIZONTAL_GUTTER),
+  makeReel("column-3",SLOT_REEL_ITEM_LEFT + (SLOT_REEL_ITEM_HORIZONTAL_GUTTER * 2))
 
   k.action(() => {
     if (!spinInProgress && k.mouseIsClicked()) {
@@ -144,12 +205,40 @@ const slots = () => {
   ]);
 
   k.add([
-    k.text(SLOTS_TITLE, 32),
+    k.text(SLOTS_TITLE, 40),
     k.origin("center"),
     k.pos(WIDTH / 2, 32),
     "title",
     k.layer("ui")
   ]);
+
+  k.add([
+    k.text("Click to play!", 24),
+    k.origin("center"),
+    k.pos(WIDTH / 2, 84),
+    "subtitle",
+    k.layer("ui"),
+  ]);
+
+  k.add([
+    k.text("Click to play!", 24),
+    k.origin("center"),
+    k.pos(WIDTH / 2, HEIGHT * 0.9),
+    "subtitle",
+    k.layer("ui"),
+  ]);
+
+  k.loop(0.7, () => {
+    if (spinInProgress) {
+      k.every("subtitle", (obj) => {
+        obj.hidden = true;
+      });
+      return;
+    }
+    k.every("subtitle", (obj) => {
+      obj.hidden = !obj.hidden;
+    });
+  });
 };
 
 export default slots;

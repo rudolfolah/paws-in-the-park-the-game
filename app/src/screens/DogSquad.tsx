@@ -7,6 +7,8 @@ import {CreateTxOptions, LCDClient, MsgExecuteContract, StdFee} from "@terra-mon
 import './DogSquad.css';
 import {ACCESSORY_IMAGE, DOG_ATTR_NAME, DOG_CLASS_NAME, DOG_IMAGE} from "../constants";
 import {Link} from "react-router-dom";
+import GameHint from "../components/GameHint";
+import Button from "../components/Button";
 
 export default function DogSquad() {
   useEffect(() => { hideGame() }, []);
@@ -69,6 +71,9 @@ export default function DogSquad() {
   return (<div className="screen-dog-squad">
     <section className="dog-list">
       <header>
+        <GameHint align={"left"}>
+          Click on a dog in your dog squad collection to view more details and accessories!
+        </GameHint>
         <h3>{dogs?.length} Dogs</h3>
       </header>
       <section className="dog-items">
@@ -82,36 +87,44 @@ export default function DogSquad() {
             </header>
             <section>
               <div>
-                <img src={DOG_IMAGE[dog.class]} />
+                <Link to={`/dog/${dog.id}`}>
+                  <img src={DOG_IMAGE[dog.class]} />
+                </Link>
               </div>
-              <div>
-                <div>{DOG_ATTR_NAME[0]}: {dog.attr1}</div>
-                <div>{DOG_ATTR_NAME[1]}: {dog.attr2}</div>
-                <div>{DOG_ATTR_NAME[2]}: {dog.attr3}</div>
-                <div>{DOG_ATTR_NAME[3]}: {dog.attr4}</div>
+              <div className="dog-item-attributes">
+                <div className="dog-item-attribute">{DOG_ATTR_NAME[0]}: {dog.attr1}</div>
+                <div className="dog-item-attribute">{DOG_ATTR_NAME[1]}: {dog.attr2}</div>
+                <div className="dog-item-attribute">{DOG_ATTR_NAME[2]}: {dog.attr3}</div>
+                <div className="dog-item-attribute">{DOG_ATTR_NAME[3]}: {dog.attr4}</div>
               </div>
             </section>
             <footer>
-              Amount (USDT): <input type="text" value={dogSaleAmount} onChange={e => {
+              Amount (USDT): <input className="dog-item-sale-amount" type="text" value={dogSaleAmount} onChange={e => {
                 setDogSaleAmount(e.target.value);
               }}/>
-              <button onClick={() => executeSellDogOnMarket(dog.id, `${dogSaleAmount}000000`)}>
+              <Button onClick={() => executeSellDogOnMarket(dog.id, `${dogSaleAmount}000000`)}>
                 List for sale
-              </button>
+              </Button>
             </footer>
           </div>
         )}
       </section>
     </section>
+    <hr />
     <section className="accessory-list">
       <header>
+        <GameHint align={"left"}>
+          Play <Link to={"/play"}>Spin the Paw</Link> to collect more accessories!
+        </GameHint>
         <h3>{accessories?.length} Accessories</h3>
       </header>
       <section className="accessory-items">
         {accessories?.map(accessory =>
           <div className="accessory-item" key={accessory.id}>
-            <img src={ACCESSORY_IMAGE[accessory.name]} />
-            {accessory.name}
+            <div className="accessory-item-name">{accessory.name.toUpperCase()}</div>
+            <div className="accessory-item-image">
+              <img src={ACCESSORY_IMAGE[accessory.name]} />
+            </div>
           </div>
         )}
       </section>

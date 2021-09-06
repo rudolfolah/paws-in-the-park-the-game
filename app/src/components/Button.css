@@ -1,0 +1,17 @@
+.btn-container {
+    display: inline-block;
+    margin: 5px;
+    padding: 1px;
+}
+
+.btn-button {
+    border: 1px solid rgb(243, 194, 9);
+    font-size: 14pt;
+    padding: 16px;
+    cursor: pointer;
+    background: linear-gradient(0deg, #f3c209, bisque);
+}
+
+.btn-button:hover {
+    background: linear-gradient(0deg, #fcebd8, #f6d146);
+}

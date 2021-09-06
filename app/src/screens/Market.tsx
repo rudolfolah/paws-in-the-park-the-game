@@ -4,6 +4,10 @@ import {BalanceResponse, MarketListing, MarketListingsResponse} from "../types";
 import {useConnectedWallet} from "@terra-money/wallet-provider";
 import {CreateTxOptions, LCDClient, MsgExecuteContract, StdFee} from "@terra-money/terra.js";
 import {CONTRACT_ADDRESS} from "../components/constants";
+import Button from "../components/Button";
+
+import "./Market.css";
+import GameHint from "../components/GameHint";
 
 export default function Market() {
   useEffect(() => { hideGame(); }, []);
@@ -59,22 +63,29 @@ export default function Market() {
     });
   }
 
-  return (<section>
+  return (<section className="screen-market">
     <header>
       <h3>Market Listings</h3>
+      <GameHint align={"right"}>
+        You can buy dogs that other players have listed for sale!
+      </GameHint>
     </header>
-    <section>
+    <section className="market-listings">
       {listings?.map(listing =>
-        <div key={listing.id}>
-          <div>
-            <div>Dog #{listing.id}</div>
-            <div>Listed by {listing.listed_by_address}</div>
-          </div>
-          <div>
-            <button onClick={() => executeBuyDogOnMarket(listing.id, listing.price.amount)}>
+        <div className="market-listing" key={listing.id}>
+          <section>
+            <div className="market-listing-title">Dog #{listing.id}</div>
+            <div className="market-listing-listed-by">
+              Listed by <a target="_blank" href={`https://finder.terra.money/bombay-10/account/${listing.listed_by_address}`}>
+                {listing.listed_by_address}
+              </a>
+            </div>
+          </section>
+          <footer>
+            <Button onClick={() => executeBuyDogOnMarket(listing.id, listing.price.amount)}>
               Buy this dog for {parseFloat(listing.price.amount) / 1000000.0} USDT
-            </button>
-          </div>
+            </Button>
+          </footer>
         </div>
       )}
     </section>

@@ -25,9 +25,9 @@ html {
 }
 
 #root, #game_container {
-  width: 640px;
-  margin-left: 25%;
-  margin-right: 25%;
+  /*width: 800px;*/
+  margin-left: 20%;
+  margin-right: 20%;
 }
 
 #nav {
