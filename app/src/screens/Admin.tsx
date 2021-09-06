@@ -79,11 +79,13 @@ export default function Admin() {
     };
     connectedWallet.post(tx).then(nextTxResult => {
       console.log(nextTxResult);
+      setMintStatus(MintStatus.Completed);
     }).catch((error: unknown) => {
       console.error(error);
       setMintStatus(MintStatus.Error);
     });
   };
+
   const executeTransfer = () => {
     if (!lcd || !connectedWallet) {
       return;
@@ -109,16 +111,53 @@ export default function Admin() {
       console.error(error);
     });
   };
+
+  const [mintDogsStatus, setMintDogsStatus] = useState<MintStatus>(MintStatus.NotInProgress);
+  const [mintDogsAmount, setMintDogsAmount] = useState<string>("0");
+  const executeMintDogs = () => {
+    if (!lcd || !connectedWallet || mintDogsStatus == MintStatus.InProgress || mintDogsAmount === "0") {
+      return;
+    }
+    const executeMsg = new MsgExecuteContract(
+      connectedWallet.walletAddress,
+      CONTRACT_ADDRESS,
+      {
+        mint_dog: {
+          amount: mintDogsAmount,
+        },
+      },
+      { uluna: 50000 },
+    );
+    const tx: CreateTxOptions = {
+      msgs: [executeMsg],
+      fee: new StdFee(1000000, { uluna: 200000 }),
+    };
+    connectedWallet.post(tx).then(nextTxResult => {
+      console.log(nextTxResult);
+      setMintDogsStatus(MintStatus.Completed);
+    }).catch((error: unknown) => {
+      console.error(error);
+      setMintStatus(MintStatus.Error);
+    });
+  };
+
   return (<div>
     <section>
       <h3>Mint</h3>
-      <p><input type="text" value={mintAmount} onChange={e => {
+      <p>Amount: <input type="text" value={mintAmount} onChange={e => {
         setMintAmount(e.target.value);
       }}/></p>
       <p><button onClick={() => executeMint()} disabled={mintStatus == MintStatus.InProgress}>Mint</button> {mintStatus}</p>
     </section>
     <section>
       <p><button onClick={() => executeTransfer()}>Transfer</button></p>
+    </section>
+    <section>
+      <h3>Mint Dogs</h3>
+      <p>Amount: <input type="text" value={mintDogsAmount} onChange={e => {
+        setMintDogsAmount(e.target.value);
+      }}/></p>
+      <p><button onClick={() => executeMintDogs()} disabled={mintDogsStatus == MintStatus.InProgress}>Mint</button> {mintDogsStatus}</p>
     </section>
   </div>);
 }

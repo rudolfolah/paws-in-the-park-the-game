@@ -37,6 +37,7 @@ export default function DogSquad() {
     }
   }, [connectedWallet, lcd]);
 
+  const [dogSaleAmount, setDogSaleAmount] = useState<string>("1");
   const executeSellDogOnMarket = (dog_id: string, price_in_uusd: string) => {
     if (!connectedWallet || !lcd) {
       return;
@@ -91,11 +92,11 @@ export default function DogSquad() {
               </div>
             </section>
             <footer>
-              <button onClick={() => executeSellDogOnMarket(dog.id, "1000000")}>
-                Sell for 1 USDT
-              </button>
-              <button onClick={() => executeSellDogOnMarket(dog.id, "5000000")}>
-                Sell for 5 USDT
+              Amount (USDT): <input type="text" value={dogSaleAmount} onChange={e => {
+                setDogSaleAmount(e.target.value);
+              }}/>
+              <button onClick={() => executeSellDogOnMarket(dog.id, `${dogSaleAmount}000000`)}>
+                List for sale
               </button>
             </footer>
           </div>
