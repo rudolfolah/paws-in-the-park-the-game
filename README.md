@@ -5,8 +5,7 @@ Take care of your pet, buy/sell your pet and items on the blockchain
 Copyright (C) 2021 Rudolf Olah <rudolf.olah.to@gmail.com>
 
 - `app`: React + Kaboom.js game frontend
-- `game-contract`: Smart contract for the game, including [CW721 NFTs](https://github.com/CosmWasm/cw-plus/tree/main/packages/cw721)
-- `token`: Tailwag (TAG) token smart contract, [CW20 Fungible Token](https://github.com/CosmWasm/cw-plus/tree/main/packages/cw20)
+- `token`: Tailwag (TAG) token smart contract and game-specific smart contract logic, [CW20 Fungible Token](https://github.com/CosmWasm/cw-plus/tree/main/packages/cw20) and [CW721 NFTs](https://github.com/CosmWasm/cw-plus/tree/main/packages/cw721)
 
 ## Setup required for Smart Contracts
 
