@@ -1,7 +1,7 @@
-use cosmwasm_std::{Uint128, Binary};
+use crate::state::{AccessoryData, DogData, MarketListing};
+use cosmwasm_std::{Binary, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use crate::state::{DogData, AccessoryData, MarketListing};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {}
@@ -10,9 +10,14 @@ pub struct InstantiateMsg {}
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     /// Transfer is a base message to move tokens to another account without triggering actions
-    Transfer { recipient: String, amount: Uint128 },
+    Transfer {
+        recipient: String,
+        amount: Uint128,
+    },
     /// Burn is a base message to destroy tokens forever
-    Burn { amount: Uint128 },
+    Burn {
+        amount: Uint128,
+    },
     /// Send is a base message to transfer tokens to a contract and trigger an action
     /// on the receiving contract.
     Send {
@@ -21,13 +26,25 @@ pub enum ExecuteMsg {
         msg: Binary,
     },
     /// Mint more tokens
-    Mint { amount: Uint128 },
+    Mint {
+        amount: Uint128,
+    },
 
     // TODO: the following need to go into a separate smart contract
-    MintDog { amount: Uint128 },
-    MintAccessory { name: String, amount: Uint128 },
-    SellDogOnMarket { dog_id: String, price: Uint128 },
-    BuyDogOnMarket { dog_id: String },
+    MintDog {
+        amount: Uint128,
+    },
+    MintAccessory {
+        name: String,
+        amount: Uint128,
+    },
+    SellDogOnMarket {
+        dog_id: String,
+        price: Uint128,
+    },
+    BuyDogOnMarket {
+        dog_id: String,
+    },
     SpinTheWheel {},
 }
 
@@ -36,14 +53,18 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     /// Returns the current balance of the given address, 0 if unset.
     /// Return type: BalanceResponse.
-    Balance { address: String },
+    Balance {
+        address: String,
+    },
     /// Returns metadata on the contract - name, decimals, supply, etc.
     /// Return type: TokenInfoResponse.
     TokenInfo {},
 
     // TODO: the following need to go into a separate smart contract
     GameInfo {},
-    Inventory { address: String },
+    Inventory {
+        address: String,
+    },
     MarketListings {},
 }
 

@@ -1,4 +1,4 @@
-use cosmwasm_std::{Uint128, Coin};
+use cosmwasm_std::{Coin, Uint128};
 use cw_storage_plus::{Item, Map}; // See: https://github.com/CosmWasm/cw-plus/tree/main/packages/storage-plus
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,6 @@ pub const TOTAL_SUPPLY: Item<Uint128> = Item::new("total_supply");
 
 // Key is the Address, value is the amount of tokens being held by that address
 pub const HOLDERS: Map<&[u8], Uint128> = Map::new("holders");
-
 
 // TODO: the following need to go into a separate smart contract
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

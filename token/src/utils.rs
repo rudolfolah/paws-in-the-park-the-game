@@ -1,5 +1,5 @@
+use cosmwasm_std::Timestamp;
 use oorandom::Rand32;
-use cosmwasm_std::{Timestamp};
 
 const ALPHANUMERIC: &str = "abcdefghijklmnopqrstuvwxyz0123456789";
 

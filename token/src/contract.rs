@@ -1,14 +1,23 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, Order, Coin, SubMsg, BankMsg, Timestamp};
+use cosmwasm_std::{
+    to_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdResult,
+    SubMsg, Timestamp, Uint128,
+};
 use cw2::set_contract_version;
-use cw20::{Cw20ReceiveMsg};
+use cw20::Cw20ReceiveMsg;
 
 use crate::error::ContractError;
-use crate::msg::{BalanceResponse, ExecuteMsg, InstantiateMsg, QueryMsg, TokenInfoResponse, InventoryResponse, GameInfoResponse, MarketListingsResponse};
-use crate::state::{HOLDERS, TOTAL_SUPPLY, DOGS, ACCESSORIES, DogData, AccessoryData, MARKET_LISTINGS_DOGS, MarketListing};
+use crate::msg::{
+    BalanceResponse, ExecuteMsg, GameInfoResponse, InstantiateMsg, InventoryResponse,
+    MarketListingsResponse, QueryMsg, TokenInfoResponse,
+};
+use crate::state::{
+    AccessoryData, DogData, MarketListing, ACCESSORIES, DOGS, HOLDERS, MARKET_LISTINGS_DOGS,
+    TOTAL_SUPPLY,
+};
 use crate::utils::{generate_id, rand_int_between};
-use std::ops::{Add};
+use std::ops::Add;
 
 const CONTRACT_NAME: &str = "my-pet-pal:token";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -56,14 +65,22 @@ pub fn execute(
         ExecuteMsg::Mint { amount } => try_mint(deps, info, amount),
         // TODO: the following need to go into a separate smart contract
         ExecuteMsg::MintDog { amount } => try_mint_dog(deps, env, info, amount),
-        ExecuteMsg::MintAccessory { name, amount } => try_mint_accessory(deps, env, info, name, amount),
-        ExecuteMsg::SellDogOnMarket { dog_id, price} => try_sell_dog_on_market(deps, info, dog_id, price),
+        ExecuteMsg::MintAccessory { name, amount } => {
+            try_mint_accessory(deps, env, info, name, amount)
+        }
+        ExecuteMsg::SellDogOnMarket { dog_id, price } => {
+            try_sell_dog_on_market(deps, info, dog_id, price)
+        }
         ExecuteMsg::BuyDogOnMarket { dog_id } => try_buy_dog_on_market(deps, info, dog_id),
         ExecuteMsg::SpinTheWheel {} => try_spin_the_wheel(deps, env, info),
     }
 }
 
-pub fn try_mint(deps: DepsMut, info: MessageInfo, amount: Uint128) -> Result<Response, ContractError>  {
+pub fn try_mint(
+    deps: DepsMut,
+    info: MessageInfo,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
     if amount.is_zero() {
         return Err(ContractError::AmountCannotBeZero {});
     }
@@ -73,22 +90,17 @@ pub fn try_mint(deps: DepsMut, info: MessageInfo, amount: Uint128) -> Result<Res
     let updated_owner_balance = HOLDERS.update(
         deps.storage,
         OWNER_ADDR.as_bytes(),
-        |balance| -> StdResult<_> {
-            Ok(balance.unwrap_or_default() + amount)
-        }
+        |balance| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
-    let updated_total_supply = TOTAL_SUPPLY.update(
-        deps.storage,
-        |total_supply: Uint128 | -> StdResult<_>  {
+    let updated_total_supply = TOTAL_SUPPLY
+        .update(deps.storage, |total_supply: Uint128| -> StdResult<_> {
             Ok(total_supply.add(amount))
-        }
-    )?;
+        })?;
     Ok(Response::new()
         .add_attribute("method", "try_mint")
         .add_attribute("amount", amount)
         .add_attribute("updated_owner_balance", updated_owner_balance)
-        .add_attribute("updated_total_supply", updated_total_supply)
-    )
+        .add_attribute("updated_total_supply", updated_total_supply))
 }
 
 pub fn try_transfer(
@@ -110,11 +122,7 @@ pub fn try_transfer(
         .may_load(deps.storage, recipient.as_bytes())?
         .unwrap_or(Uint128::from(0u128));
     let updated_recipient_balance = current_recipient_balance.u128() + amount.u128();
-    HOLDERS.save(
-        deps.storage,
-        sender_key,
-        &Uint128::from(updated_balance)
-    )?;
+    HOLDERS.save(deps.storage, sender_key, &Uint128::from(updated_balance))?;
     HOLDERS.save(
         deps.storage,
         recipient.as_bytes(),
@@ -134,40 +142,34 @@ pub fn try_burn(
     HOLDERS.update(
         deps.storage,
         info.sender.as_bytes(),
-        |balance| -> StdResult<_> {
-            Ok(balance.unwrap_or_default().checked_sub(amount)?)
-        }
+        |balance| -> StdResult<_> { Ok(balance.unwrap_or_default().checked_sub(amount)?) },
     )?;
-    TOTAL_SUPPLY.update(
-        deps.storage,
-        |total_supply: Uint128 | -> StdResult<_>  {
-            Ok(total_supply.checked_sub(amount)?)
-        }
-    )?;
+    TOTAL_SUPPLY.update(deps.storage, |total_supply: Uint128| -> StdResult<_> {
+        Ok(total_supply.checked_sub(amount)?)
+    })?;
     Ok(Response::new()
         .add_attribute("method", "try_burn")
-        .add_attribute("amount", amount)
-    )
+        .add_attribute("amount", amount))
 }
 
 /// Based on the code in cw20-base for execute_send
 pub fn try_send(
-    deps: DepsMut, info: MessageInfo, contract: String, amount: Uint128, msg: Binary
+    deps: DepsMut,
+    info: MessageInfo,
+    contract: String,
+    amount: Uint128,
+    msg: Binary,
 ) -> Result<Response, ContractError> {
     let recipient_address = deps.api.addr_validate(&contract)?;
     HOLDERS.update(
         deps.storage,
         info.sender.as_bytes(),
-        |balance| -> StdResult<_> {
-            Ok(balance.unwrap_or_default().checked_sub(amount)?)
-        }
+        |balance| -> StdResult<_> { Ok(balance.unwrap_or_default().checked_sub(amount)?) },
     )?;
     HOLDERS.update(
         deps.storage,
         recipient_address.as_bytes(),
-        |balance| -> StdResult<_> {
-            Ok(balance.unwrap_or_default() + amount)
-        }
+        |balance| -> StdResult<_> { Ok(balance.unwrap_or_default() + amount) },
     )?;
 
     let res = Response::new()
@@ -181,7 +183,7 @@ pub fn try_send(
                 amount,
                 msg,
             }
-                .into_cosmos_msg(contract)?,
+            .into_cosmos_msg(contract)?,
         );
     Ok(res)
 }
@@ -234,11 +236,7 @@ const DOG_CLASS_ATTR_RANGES: [[(u8, u8); 4]; 7] = [
     [(1u8, 7u8), (1u8, 7u8), (7u8, 10u8), (7u8, 10u8)],
 ];
 
-const ACCESSORY_NAMES: [&str; 3] = [
-    "martini glass",
-    "sparkle",
-    "star",
-];
+const ACCESSORY_NAMES: [&str; 3] = ["martini glass", "sparkle", "star"];
 
 fn create_random_dog(seed_timestamp: Timestamp, id: &String, name: &String, class: u8) -> DogData {
     let ranges = DOG_CLASS_ATTR_RANGES[usize::from(class)];
@@ -246,30 +244,37 @@ fn create_random_dog(seed_timestamp: Timestamp, id: &String, name: &String, clas
         class: class.clone(),
         id: id.clone(),
         name: name.clone(),
-        attr1: rand_int_between(seed_timestamp, ranges[0].0, ranges[0].1),
-        attr2: rand_int_between(seed_timestamp, ranges[1].0, ranges[1].1),
-        attr3: rand_int_between(seed_timestamp, ranges[2].0, ranges[2].1),
-        attr4: rand_int_between(seed_timestamp, ranges[3].0, ranges[3].1),
+        attr1: rand_int_between(seed_timestamp.plus_nanos(10u64), ranges[0].0, ranges[0].1),
+        attr2: rand_int_between(seed_timestamp.plus_nanos(20u64), ranges[1].0, ranges[1].1),
+        attr3: rand_int_between(seed_timestamp.plus_nanos(30u64), ranges[2].0, ranges[2].1),
+        attr4: rand_int_between(seed_timestamp.plus_nanos(40u64), ranges[3].0, ranges[3].1),
     };
 }
 
-fn try_mint_dog(deps: DepsMut, env: Env, info: MessageInfo, amount: Uint128) -> Result<Response, ContractError> {
+fn try_mint_dog(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
     if info.sender != OWNER_ADDR {
         return Err(ContractError::Unauthorized {});
     }
     for i in 0u128..amount.u128() {
-        let id = generate_id(
-            Timestamp::from_nanos(
-                env.block.time.nanos() + i as u64
-            ));
+        let id = generate_id(Timestamp::from_nanos(env.block.time.nanos() + i as u64));
         println!("minting dog #{}: #{}", i, id);
         let name = format!("Dog #{}", id);
-        let class = rand_int_between(Timestamp::from_nanos(
-            env.block.time.nanos() + i as u64
-        ), 0u8, 6u8);
-        let dog_data = create_random_dog(Timestamp::from_nanos(
-            env.block.time.nanos() + i as u64
-        ), &id, &name, class);
+        let class = rand_int_between(
+            Timestamp::from_nanos(env.block.time.nanos() + i as u64),
+            0u8,
+            6u8,
+        );
+        let dog_data = create_random_dog(
+            Timestamp::from_nanos(env.block.time.nanos() + i as u64),
+            &id,
+            &name,
+            class,
+        );
         // let dog_data = DogData {
         //     class: class.clone(),
         //     id: id.clone(),
@@ -285,12 +290,16 @@ fn try_mint_dog(deps: DepsMut, env: Env, info: MessageInfo, amount: Uint128) -> 
         DOGS.save(deps.storage, key, &dog_data)?;
     }
 
-    Ok(Response::new()
-        .add_attribute("method", "try_mint_dog")
-    )
+    Ok(Response::new().add_attribute("method", "try_mint_dog"))
 }
 
-fn try_mint_accessory(deps: DepsMut, env: Env, info: MessageInfo, name: String, _amount: Uint128) -> Result<Response, ContractError> {
+fn try_mint_accessory(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    name: String,
+    _amount: Uint128,
+) -> Result<Response, ContractError> {
     if info.sender != OWNER_ADDR {
         return Err(ContractError::Unauthorized {});
     }
@@ -303,16 +312,20 @@ fn try_mint_accessory(deps: DepsMut, env: Env, info: MessageInfo, name: String, 
     ACCESSORIES.save(
         deps.storage,
         (info.sender.as_bytes(), id.as_bytes()),
-        &accessory_data
+        &accessory_data,
     )?;
 
     Ok(Response::new()
         .add_attribute("method", "try_mint_accessory")
-        .add_attribute("id", &id)
-    )
+        .add_attribute("id", &id))
 }
 
-fn try_sell_dog_on_market(deps: DepsMut, info: MessageInfo, dog_id: String, price: Uint128) -> Result<Response, ContractError> {
+fn try_sell_dog_on_market(
+    deps: DepsMut,
+    info: MessageInfo,
+    dog_id: String,
+    price: Uint128,
+) -> Result<Response, ContractError> {
     if price.u128() < 500_000u128 {
         return Err(ContractError::ListingPriceTooLow {});
     }
@@ -327,27 +340,36 @@ fn try_sell_dog_on_market(deps: DepsMut, info: MessageInfo, dog_id: String, pric
     if MARKET_LISTINGS_DOGS.has(deps.storage, dog_id.as_bytes()) {
         return Err(ContractError::AlreadyListedOnMarket {});
     }
-    MARKET_LISTINGS_DOGS.save(deps.storage, dog_id.as_bytes(), &MarketListing {
-        id: dog_id.to_string(),
-        price: Coin { amount: price , denom: PRICE_DENOM.to_string() },
-        listed_by_address: info.sender.into_string(),
-    })?;
+    MARKET_LISTINGS_DOGS.save(
+        deps.storage,
+        dog_id.as_bytes(),
+        &MarketListing {
+            id: dog_id.to_string(),
+            price: Coin {
+                amount: price,
+                denom: PRICE_DENOM.to_string(),
+            },
+            listed_by_address: info.sender.into_string(),
+        },
+    )?;
 
-    Ok(Response::new()
-           .add_attribute("method", "try_sell_dog_on_market")
-    )
+    Ok(Response::new().add_attribute("method", "try_sell_dog_on_market"))
 }
 
-fn try_buy_dog_on_market(deps: DepsMut, info: MessageInfo, dog_id: String) -> Result<Response, ContractError> {
-    let listing = MARKET_LISTINGS_DOGS.may_load(
-        deps.storage, dog_id.as_bytes()
-    )?;
+fn try_buy_dog_on_market(
+    deps: DepsMut,
+    info: MessageInfo,
+    dog_id: String,
+) -> Result<Response, ContractError> {
+    let listing = MARKET_LISTINGS_DOGS.may_load(deps.storage, dog_id.as_bytes())?;
     if listing.is_none() {
         return Err(ContractError::ListingDoesNotExist {});
     }
     let listing = listing.unwrap();
 
-    let fund = info.funds.iter()
+    let fund = info
+        .funds
+        .iter()
         .find(|&x| x.denom == listing.price.denom && x.amount == listing.price.amount);
     if fund.is_none() {
         return Err(ContractError::DoesNotMatchListingPrice {});
@@ -366,11 +388,17 @@ fn try_buy_dog_on_market(deps: DepsMut, info: MessageInfo, dog_id: String) -> Re
     let msgs = vec![
         SubMsg::new(BankMsg::Send {
             to_address: listing.listed_by_address.clone(),
-            amount: vec![Coin { denom: PRICE_DENOM.to_string(), amount: amount_for_seller.unwrap() }],
+            amount: vec![Coin {
+                denom: PRICE_DENOM.to_string(),
+                amount: amount_for_seller.unwrap(),
+            }],
         }),
         SubMsg::new(BankMsg::Send {
             to_address: OWNER_ADDR.to_string(),
-            amount: vec![Coin { denom: PRICE_DENOM.to_string(), amount: amount_for_owner }],
+            amount: vec![Coin {
+                denom: PRICE_DENOM.to_string(),
+                amount: amount_for_owner,
+            }],
         }),
     ];
 
@@ -379,29 +407,35 @@ fn try_buy_dog_on_market(deps: DepsMut, info: MessageInfo, dog_id: String) -> Re
     let dog = DOGS.may_load(deps.storage, seller_key)?.unwrap();
     DOGS.remove(deps.storage, seller_key);
     DOGS.save(deps.storage, buyer_key, &dog)?;
+    MARKET_LISTINGS_DOGS.remove(deps.storage, listing.id.as_bytes());
 
     Ok(Response::new()
         .add_submessages(msgs)
-        .add_attribute("method", "try_buy_dog_on_market")
-    )
+        .add_attribute("method", "try_buy_dog_on_market"))
 }
 
-fn try_spin_the_wheel(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+fn try_spin_the_wheel(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
     let denom = PRICE_DENOM.to_string();
     let price = Uint128::from(SPIN_THE_WHEEL_PRICE_UUSD);
-    let fund = info.funds.iter()
+    let fund = info
+        .funds
+        .iter()
         .find(|&x| x.denom == denom && x.amount == price);
     if fund.is_none() {
         return Err(ContractError::InsufficientFunds {});
     }
     let choice = rand_int_between(env.block.time, 1u8, 100u8);
     let prize_id = generate_id(env.block.time);
-    let mut prize= "none";
+    let mut prize = "none";
     println!("WHEEL SPUN: {}", choice);
     if choice <= 10u8 {
         prize = "dog";
         let class_choice = rand_int_between(env.block.time, 1u8, 100u8);
-        let mut class= 0;
+        let mut class = 0;
         if class_choice <= 20 {
             class = 0;
         } else if class_choice <= 50 {
@@ -422,7 +456,7 @@ fn try_spin_the_wheel(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Resp
         DOGS.save(
             deps.storage,
             (info.sender.as_bytes(), prize_id.as_bytes()),
-            &dog_data
+            &dog_data,
         )?;
     } else {
         prize = "accessory";
@@ -435,7 +469,7 @@ fn try_spin_the_wheel(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Resp
         ACCESSORIES.save(
             deps.storage,
             (info.sender.as_bytes(), prize_id.as_bytes()),
-            &accessory_data
+            &accessory_data,
         )?;
     }
     println!("PRIZE IS {}", prize);
@@ -443,8 +477,7 @@ fn try_spin_the_wheel(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Resp
     Ok(Response::new()
         .add_attribute("method", "try_spin_the_wheel")
         .add_attribute("prize", prize)
-        .add_attribute("prize_id", prize_id)
-    )
+        .add_attribute("prize_id", prize_id))
 }
 
 fn query_game_info(deps: Deps) -> StdResult<GameInfoResponse> {
@@ -461,7 +494,8 @@ fn query_game_info(deps: Deps) -> StdResult<GameInfoResponse> {
 }
 
 fn query_inventory(deps: Deps, address: String) -> StdResult<InventoryResponse> {
-    let dogs: Vec<_> = DOGS.prefix(address.as_bytes())
+    let dogs: Vec<_> = DOGS
+        .prefix(address.as_bytes())
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     // print_type_of(&dogs);
@@ -472,7 +506,8 @@ fn query_inventory(deps: Deps, address: String) -> StdResult<InventoryResponse> 
         dogs_response.push(dog_data);
     }
 
-    let accessories: Vec<_> = ACCESSORIES.prefix(address.as_bytes())
+    let accessories: Vec<_> = ACCESSORIES
+        .prefix(address.as_bytes())
         .range(deps.storage, None, None, Order::Ascending)
         .collect();
     let mut accessories_response = Vec::new();
@@ -498,7 +533,7 @@ fn query_market_listings(deps: Deps) -> StdResult<MarketListingsResponse> {
         listings_response.push(listing_data);
     }
     return Ok(MarketListingsResponse {
-        listings: listings_response
+        listings: listings_response,
     });
 }
 
@@ -507,7 +542,9 @@ fn query_market_listings(deps: Deps) -> StdResult<MarketListingsResponse> {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_info, MOCK_CONTRACT_ADDR};
-    use cosmwasm_std::{coins, from_binary, Api, OwnedDeps, Querier, Storage, BlockInfo, ContractInfo, Addr};
+    use cosmwasm_std::{
+        coins, from_binary, Addr, Api, BlockInfo, ContractInfo, OwnedDeps, Querier, Storage,
+    };
     // use crate::utils::print_type_of;
 
     fn mock_env(timestamp_nanos: u64) -> Env {
@@ -556,8 +593,9 @@ mod tests {
             deps.as_mut(),
             mock_env(0),
             mock_info("creator", &coins(1000, "earth")),
-            InstantiateMsg {}
-        ).unwrap();
+            InstantiateMsg {},
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
         let res = query(deps.as_ref(), mock_env(1), QueryMsg::TokenInfo {}).unwrap();
@@ -589,7 +627,8 @@ mod tests {
             ExecuteMsg::Burn {
                 amount: Uint128::new(1_000),
             },
-        ).unwrap();
+        )
+        .unwrap();
         assert_balance_is(&deps, OWNER_ADDR, 9_000u128);
 
         let res = query(deps.as_ref(), mock_env(2), QueryMsg::TokenInfo {}).unwrap();
@@ -619,7 +658,8 @@ mod tests {
                 amount: Uint128::from(2u128),
                 recipient: "other_address".to_string(),
             },
-        ).unwrap();
+        )
+        .unwrap();
         assert_balance_is(&deps, "other_address", 2u128);
         execute(
             deps.as_mut(),
@@ -748,15 +788,18 @@ mod tests {
             deps.as_mut(),
             mock_env(0),
             mock_info("creator", &coins(1000, "earth")),
-            InstantiateMsg {}
-        ).unwrap();
+            InstantiateMsg {},
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
         let res = execute(
             deps.as_mut(),
             mock_env(1),
             mock_info("other_address", &[]),
-            ExecuteMsg::MintDog { amount: Uint128::from(1u128) },
+            ExecuteMsg::MintDog {
+                amount: Uint128::from(1u128),
+            },
         );
         match res {
             Err(ContractError::Unauthorized {}) => {}
@@ -767,9 +810,18 @@ mod tests {
             deps.as_mut(),
             mock_env(2),
             mock_info(OWNER_ADDR, &[]),
-            ExecuteMsg::MintDog { amount: Uint128::from(5u128) },
+            ExecuteMsg::MintDog {
+                amount: Uint128::from(5u128),
+            },
         );
-        let res = query(deps.as_ref(), mock_env(3), QueryMsg::Inventory { address: OWNER_ADDR.to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(3),
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         assert_eq!(5, inventory.dogs.len());
 
@@ -786,11 +838,19 @@ mod tests {
             deps.as_mut(),
             mock_env(0),
             mock_info("creator", &coins(1000, "earth")),
-            InstantiateMsg {}
-        ).unwrap();
+            InstantiateMsg {},
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
-        let res = query(deps.as_ref(), mock_env(1), QueryMsg::Inventory { address: OWNER_ADDR.to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(1),
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         assert_eq!(0, inventory.dogs.len());
         assert_eq!(0, inventory.accessories.len());
@@ -804,30 +864,50 @@ mod tests {
             deps.as_mut(),
             mock_env(0),
             mock_info("creator", &coins(1000, "earth")),
-            InstantiateMsg {}
-        ).unwrap();
+            InstantiateMsg {},
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
         let _res = execute(
             deps.as_mut(),
             mock_env(1),
             mock_info(OWNER_ADDR, &[]),
-            ExecuteMsg::MintDog { amount: Uint128::from(1u128) },
+            ExecuteMsg::MintDog {
+                amount: Uint128::from(1u128),
+            },
         );
 
         let _res = execute(
             deps.as_mut(),
             mock_env(2),
             mock_info(OWNER_ADDR, &[]),
-            ExecuteMsg::MintAccessory { name: String::from("Champagne"), amount: Uint128::from(1u128) },
+            ExecuteMsg::MintAccessory {
+                name: String::from("Champagne"),
+                amount: Uint128::from(1u128),
+            },
         );
 
-        let res = query(deps.as_ref(), mock_env(3), QueryMsg::Inventory { address: OWNER_ADDR.to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(3),
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         assert_eq!(1, inventory.dogs.len());
         assert_eq!(1, inventory.accessories.len());
 
-        let res = query(deps.as_ref(), mock_env(4), QueryMsg::Inventory { address: "other_address".to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(4),
+            QueryMsg::Inventory {
+                address: "other_address".to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         assert_eq!(0, inventory.dogs.len());
         assert_eq!(0, inventory.accessories.len());
@@ -841,8 +921,9 @@ mod tests {
             deps.as_mut(),
             mock_env(0),
             mock_info("creator", &coins(1000, "earth")),
-            InstantiateMsg {}
-        ).unwrap();
+            InstantiateMsg {},
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
         // dog does not exist
@@ -852,12 +933,12 @@ mod tests {
             mock_info("other_address", &[]),
             ExecuteMsg::SellDogOnMarket {
                 dog_id: String::from("does-not-exist"),
-                price: Uint128::from(500_000u128)
+                price: Uint128::from(500_000u128),
             },
         );
         match res {
             Err(ContractError::DogDoesNotExist {}) => {}
-            _ => panic!("must return dog does not exist error")
+            _ => panic!("must return dog does not exist error"),
         }
 
         // dog does not belong to sender (aka dog does not exist because of composite key)
@@ -865,13 +946,18 @@ mod tests {
             deps.as_mut(),
             mock_env(2),
             mock_info(OWNER_ADDR, &[]),
-            ExecuteMsg::MintDog { amount: Uint128::from(1u128) },
+            ExecuteMsg::MintDog {
+                amount: Uint128::from(1u128),
+            },
         );
         let res = query(
             deps.as_ref(),
             mock_env(3),
-            QueryMsg::Inventory { address: OWNER_ADDR.to_string() }
-        ).unwrap();
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         let existing_dog_id: String = String::from(&inventory.dogs.get(0).unwrap().id);
         let res = execute(
@@ -880,12 +966,12 @@ mod tests {
             mock_info("other_address", &[]),
             ExecuteMsg::SellDogOnMarket {
                 dog_id: existing_dog_id.clone(),
-                price: Uint128::from(500_000u128)
+                price: Uint128::from(500_000u128),
             },
         );
         match res {
             Err(ContractError::DogDoesNotExist {}) => {}
-            _ => panic!("must return dog does not exist error")
+            _ => panic!("must return dog does not exist error"),
         }
 
         // price is below 0.5 UST
@@ -895,12 +981,12 @@ mod tests {
             mock_info("other_address", &[]),
             ExecuteMsg::SellDogOnMarket {
                 dog_id: existing_dog_id.clone(),
-                price: Uint128::from(499_999u128)
+                price: Uint128::from(499_999u128),
             },
         );
         match res {
             Err(ContractError::ListingPriceTooLow {}) => {}
-            _ => panic!("must return listing price too low error")
+            _ => panic!("must return listing price too low error"),
         }
 
         // price is above 1,000,000 UST
@@ -910,12 +996,12 @@ mod tests {
             mock_info("other_address", &[]),
             ExecuteMsg::SellDogOnMarket {
                 dog_id: existing_dog_id.clone(),
-                price: Uint128::from(1_000_000_000_001u128)
+                price: Uint128::from(1_000_000_000_001u128),
             },
         );
         match res {
             Err(ContractError::ListingPriceTooHigh {}) => {}
-            _ => panic!("must return listing price too high error")
+            _ => panic!("must return listing price too high error"),
         }
 
         // dog is put on sale (price is within limits, dog is owned by sender)
@@ -925,16 +1011,20 @@ mod tests {
             mock_info(OWNER_ADDR, &[]),
             ExecuteMsg::SellDogOnMarket {
                 dog_id: existing_dog_id.clone(),
-                price: Uint128::from(500_000u128)
+                price: Uint128::from(500_000u128),
             },
         );
         match res {
             Ok(_) => {}
-            _ => panic!("must place listing on sale")
+            _ => panic!("must place listing on sale"),
         }
         let res = query(deps.as_ref(), mock_env(8), QueryMsg::MarketListings {}).unwrap();
         let market_listings: MarketListingsResponse = from_binary(&res).unwrap();
-        assert_eq!(1, market_listings.listings.len(), "should have one market listing");
+        assert_eq!(
+            1,
+            market_listings.listings.len(),
+            "should have one market listing"
+        );
 
         // dog is already on sale
         let res = execute(
@@ -943,12 +1033,12 @@ mod tests {
             mock_info("other_address", &[]),
             ExecuteMsg::SellDogOnMarket {
                 dog_id: existing_dog_id.clone(),
-                price: Uint128::from(1_000_000_000_001u128)
+                price: Uint128::from(1_000_000_000_001u128),
             },
         );
         match res {
             Err(ContractError::ListingPriceTooHigh {}) => {}
-            _ => panic!("must return listing price too high error")
+            _ => panic!("must return listing price too high error"),
         }
     }
 
@@ -959,8 +1049,9 @@ mod tests {
             deps.as_mut(),
             mock_env(0),
             mock_info("creator", &coins(1000, "earth")),
-            InstantiateMsg {}
-        ).unwrap();
+            InstantiateMsg {},
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
         // try to buy a dog that is not listed on the market
@@ -974,7 +1065,7 @@ mod tests {
         );
         match res {
             Err(ContractError::ListingDoesNotExist {}) => {}
-            _ => panic!("must return listing does not exist error")
+            _ => panic!("must return listing does not exist error"),
         }
 
         // mint a dog
@@ -982,14 +1073,19 @@ mod tests {
             deps.as_mut(),
             mock_env(2),
             mock_info(OWNER_ADDR, &[]),
-            ExecuteMsg::MintDog { amount: Uint128::from(1u128) },
+            ExecuteMsg::MintDog {
+                amount: Uint128::from(1u128),
+            },
         );
         // find the id of the dog
         let res = query(
             deps.as_ref(),
             mock_env(3),
-            QueryMsg::Inventory { address: OWNER_ADDR.to_string() }
-        ).unwrap();
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         let existing_dog_id: String = String::from(&inventory.dogs.get(0).unwrap().id);
         // put the dog on sale
@@ -999,17 +1095,21 @@ mod tests {
             mock_info(OWNER_ADDR, &[]),
             ExecuteMsg::SellDogOnMarket {
                 dog_id: existing_dog_id.clone(),
-                price: Uint128::from(500_000u128)
+                price: Uint128::from(500_000u128),
             },
         );
         match res {
             Ok(_) => {}
-            _ => panic!("must place listing on sale")
+            _ => panic!("must place listing on sale"),
         }
         // check market listings
         let res = query(deps.as_ref(), mock_env(5), QueryMsg::MarketListings {}).unwrap();
         let market_listings: MarketListingsResponse = from_binary(&res).unwrap();
-        assert_eq!(1, market_listings.listings.len(), "should have one market listing");
+        assert_eq!(
+            1,
+            market_listings.listings.len(),
+            "should have one market listing"
+        );
 
         // buying where funds provided do not match listing amount
         let res = execute(
@@ -1022,76 +1122,158 @@ mod tests {
         );
         match res {
             Err(ContractError::DoesNotMatchListingPrice {}) => {}
-            _ => panic!("must return does not match listing price error")
+            _ => panic!("must return does not match listing price error"),
         }
         let res = execute(
             deps.as_mut(),
             mock_env(7),
-            mock_info("other_address", &[Coin { amount: Uint128::from(499_999u128), denom: "uusd".to_string() }]),
+            mock_info(
+                "other_address",
+                &[Coin {
+                    amount: Uint128::from(499_999u128),
+                    denom: "uusd".to_string(),
+                }],
+            ),
             ExecuteMsg::BuyDogOnMarket {
                 dog_id: existing_dog_id.clone(),
             },
         );
         match res {
             Err(ContractError::DoesNotMatchListingPrice {}) => {}
-            _ => panic!("must return does not match listing price error")
+            _ => panic!("must return does not match listing price error"),
         }
         let res = execute(
             deps.as_mut(),
             mock_env(8),
-            mock_info("other_address", &[Coin { amount: Uint128::from(500_001u128), denom: "uusd".to_string() }]),
+            mock_info(
+                "other_address",
+                &[Coin {
+                    amount: Uint128::from(500_001u128),
+                    denom: "uusd".to_string(),
+                }],
+            ),
             ExecuteMsg::BuyDogOnMarket {
                 dog_id: existing_dog_id.clone(),
             },
         );
         match res {
             Err(ContractError::DoesNotMatchListingPrice {}) => {}
-            _ => panic!("must return does not match listing price error")
+            _ => panic!("must return does not match listing price error"),
         }
         let res = execute(
             deps.as_mut(),
             mock_env(9),
-            mock_info("other_address", &[Coin { amount: Uint128::from(500_000u128), denom: "uluna".to_string() }]),
+            mock_info(
+                "other_address",
+                &[Coin {
+                    amount: Uint128::from(500_000u128),
+                    denom: "uluna".to_string(),
+                }],
+            ),
             ExecuteMsg::BuyDogOnMarket {
                 dog_id: existing_dog_id.clone(),
             },
         );
         match res {
             Err(ContractError::DoesNotMatchListingPrice {}) => {}
-            _ => panic!("must return does not match listing price error")
+            _ => panic!("must return does not match listing price error"),
         }
 
+        // check total supply
+        let res = query(deps.as_ref(), mock_env(10), QueryMsg::GameInfo {}).unwrap();
+        let game_info: GameInfoResponse = from_binary(&res).unwrap();
+        assert_eq!(1, game_info.total_supply_dogs);
+
         // check current inventory status
-        let res = query(deps.as_ref(), mock_env(10), QueryMsg::Inventory { address: OWNER_ADDR.to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(11),
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         assert_eq!(1, inventory.dogs.len());
 
-        let res = query(deps.as_ref(), mock_env(11), QueryMsg::Inventory { address: "other_address".to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(12),
+            QueryMsg::Inventory {
+                address: "other_address".to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         assert_eq!(0, inventory.dogs.len());
 
         // buying the dog transfers it from one account to another
         let res = execute(
             deps.as_mut(),
-            mock_env(12),
-            mock_info("other_address", &[Coin { amount: Uint128::from(500_000u128), denom: "uusd".to_string() }]),
+            mock_env(13),
+            mock_info(
+                "other_address",
+                &[Coin {
+                    amount: Uint128::from(500_000u128),
+                    denom: "uusd".to_string(),
+                }],
+            ),
             ExecuteMsg::BuyDogOnMarket {
                 dog_id: existing_dog_id.clone(),
             },
         );
         match res {
-            Ok(res) => { assert_eq!(2, res.messages.len(), "needs to send two messages to transfer funds") }
-            _ => panic!("must not return any error")
+            Ok(res) => {
+                assert_eq!(
+                    2,
+                    res.messages.len(),
+                    "needs to send two messages to transfer funds"
+                )
+            }
+            _ => panic!("must not return any error"),
         }
+        // check market listings
+        let res = query(deps.as_ref(), mock_env(14), QueryMsg::MarketListings {}).unwrap();
+        let market_listings: MarketListingsResponse = from_binary(&res).unwrap();
+        assert_eq!(
+            0,
+            market_listings.listings.len(),
+            "should have no market listings"
+        );
         // total dog supply remains the same
+        let res = query(deps.as_ref(), mock_env(15), QueryMsg::GameInfo {}).unwrap();
+        let game_info: GameInfoResponse = from_binary(&res).unwrap();
+        assert_eq!(1, game_info.total_supply_dogs);
         // inventory changes for parties involved in transaction
-        let res = query(deps.as_ref(), mock_env(13), QueryMsg::Inventory { address: OWNER_ADDR.to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(16),
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
-        assert_eq!(0, inventory.dogs.len(), "dog should no longer be part of seller's inventory");
+        assert_eq!(
+            0,
+            inventory.dogs.len(),
+            "dog should no longer be part of seller's inventory"
+        );
 
-        let res = query(deps.as_ref(), mock_env(14), QueryMsg::Inventory { address: "other_address".to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(17),
+            QueryMsg::Inventory {
+                address: "other_address".to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
-        assert_eq!(1, inventory.dogs.len(), "dog should be part of buyer's inventory");
+        assert_eq!(
+            1,
+            inventory.dogs.len(),
+            "dog should be part of buyer's inventory"
+        );
     }
 
     #[test]
@@ -1101,32 +1283,53 @@ mod tests {
             deps.as_mut(),
             mock_env(0),
             mock_info("creator_address", &coins(1000, "earth")),
-            InstantiateMsg {}
-        ).unwrap();
+            InstantiateMsg {},
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
         let res = execute(
             deps.as_mut(),
             mock_env(1),
-            mock_info("player_address", &[Coin { amount: Uint128::from(999_999u128), denom: "uusd".to_string() }]),
+            mock_info(
+                "player_address",
+                &[Coin {
+                    amount: Uint128::from(999_999u128),
+                    denom: "uusd".to_string(),
+                }],
+            ),
             ExecuteMsg::SpinTheWheel {},
         );
         match res {
             Err(ContractError::InsufficientFunds {}) => {}
-            _ => panic!("must return insufficient funds error")
+            _ => panic!("must return insufficient funds error"),
         }
 
         // spin the wheel
         let res = execute(
             deps.as_mut(),
             mock_env(2),
-            mock_info("player_address", &[Coin { amount: Uint128::from(1_000_000u128), denom: "uusd".to_string() }]),
+            mock_info(
+                "player_address",
+                &[Coin {
+                    amount: Uint128::from(1_000_000u128),
+                    denom: "uusd".to_string(),
+                }],
+            ),
             ExecuteMsg::SpinTheWheel {},
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(0, res.messages.len());
 
         // check the inventory of the player, they should receive an item
-        let res = query(deps.as_ref(), mock_env(3), QueryMsg::Inventory { address: "player_address".to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(3),
+            QueryMsg::Inventory {
+                address: "player_address".to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         println!("SPIN THE WHEEL");
         println!("{:?}", inventory);
@@ -1137,7 +1340,14 @@ mod tests {
         }
 
         // check the inventory of contract owner address, should receive nothing
-        let res = query(deps.as_ref(), mock_env(4), QueryMsg::Inventory { address: OWNER_ADDR.to_string() }).unwrap();
+        let res = query(
+            deps.as_ref(),
+            mock_env(4),
+            QueryMsg::Inventory {
+                address: OWNER_ADDR.to_string(),
+            },
+        )
+        .unwrap();
         let inventory: InventoryResponse = from_binary(&res).unwrap();
         println!("SPIN THE WHEEL");
         println!("{:?}", inventory);
