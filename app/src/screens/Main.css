@@ -20,3 +20,32 @@
 .screen-main p {
     margin: 1.2em 10em;
 }
+
+@media only screen
+and (min-device-width: 0px)
+and (max-device-width: 1200px)
+and (-webkit-min-device-pixel-ratio: 2) {
+    .screen-main {
+        margin: 0 2%;
+    }
+
+    .screen-main h1 {
+        font-size: 30pt;
+    }
+
+    .screen-main h2 {
+        font-size: 16pt;
+        text-align: center;
+        margin: 1em 0;
+    }
+
+    .screen-main h3 {
+        margin: 0;
+        padding: 0.5em 0 0;
+    }
+
+    .screen-main p {
+        line-height: 150%;
+        margin: 2em 1em;
+    }
+}
